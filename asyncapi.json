@@ -1,0 +1,193 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "SmartTJ Realtime API",
+    "version": "1.0.0",
+    "description": "Документация WebSocket каналов сервиса smarttj-realtime (комнаты заказов, отслеживание курьеров, геолокация)."
+  },
+  "servers": {
+    "smarttj-ws": {
+      "host": "localhost:3000",
+      "pathname": "/realtime/v1/order",
+      "protocol": "socket.io",
+      "description": "Socket.IO Gateway namespace realtime/v1/order",
+      "security": [
+        {
+          "$ref": "#/components/securitySchemes/JWT"
+        }
+      ]
+    }
+  },
+  "channels": {
+    "realtime/v1/order/joinOrderRoom": {
+      "address": "joinOrderRoom",
+      "messages": {
+        "joinOrderRoom": {
+          "$ref": "#/components/messages/joinOrderRoom"
+        }
+      }
+    },
+    "realtime/v1/order/updateLocation": {
+      "address": "updateLocation",
+      "messages": {
+        "updateLocation": {
+          "$ref": "#/components/messages/updateLocation"
+        }
+      }
+    },
+    "realtime/v1/order/orderLocationUpdated": {
+      "address": "orderLocationUpdated",
+      "messages": {
+        "orderLocationUpdated": {
+          "$ref": "#/components/messages/orderLocationUpdated"
+        }
+      }
+    }
+  },
+  "operations": {
+    "joinOrderRoom": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/realtime~1v1~1order~1joinOrderRoom"
+      },
+      "summary": "Клиент подписывается на обновления конкретного заказа",
+      "description": "Покупатель или курьер присоединяется к комнате заказа для получения актуальных координат",
+      "messages": [
+        {
+          "$ref": "#/channels/realtime~1v1~1order~1joinOrderRoom/messages/joinOrderRoom"
+        }
+      ]
+    },
+    "updateLocation": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/realtime~1v1~1order~1updateLocation"
+      },
+      "summary": "Курьер отправляет свои актуальные координаты",
+      "description": "Доступно ТОЛЬКО курьерам (роли PARTNER или PARTNER_EMPLOYEE). Координаты кешируются в Redis и рассылаются подписчикам заказа.",
+      "messages": [
+        {
+          "$ref": "#/channels/realtime~1v1~1order~1updateLocation/messages/updateLocation"
+        }
+      ]
+    },
+    "orderLocationUpdated": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/realtime~1v1~1order~1orderLocationUpdated"
+      },
+      "summary": "Рассылка актуальных координат курьера клиентам в комнате заказа",
+      "description": "Отправляется клиенту сразу при входе (если координаты уже есть в Redis) или при получении новых координат от курьера",
+      "messages": [
+        {
+          "$ref": "#/channels/realtime~1v1~1order~1orderLocationUpdated/messages/orderLocationUpdated"
+        }
+      ]
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "JWT": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT токен можно передавать в auth.token, query.token (?token=...) или заголовке Authorization: Bearer <token>"
+      }
+    },
+    "messages": {
+      "joinOrderRoom": {
+        "name": "joinOrderRoom",
+        "title": "JoinOrderDto",
+        "summary": "Данные для подписки на комнату заказа",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "#/components/schemas/JoinOrderDto"
+        }
+      },
+      "updateLocation": {
+        "name": "updateLocation",
+        "title": "UpdateLocationDto",
+        "summary": "Координаты курьера",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "#/components/schemas/UpdateLocationDto"
+        }
+      },
+      "orderLocationUpdated": {
+        "name": "orderLocationUpdated",
+        "title": "UpdateLocationDto",
+        "summary": "Актуальная позиция курьера для покупателя",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "#/components/schemas/UpdateLocationDto"
+        }
+      }
+    },
+    "schemas": {
+      "JoinOrderDto": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Уникальный идентификатор заказа",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "partnerId": {
+            "type": "string",
+            "description": "Идентификатор партнера/ресторана",
+            "example": "partner_abc"
+          }
+        },
+        "required": ["orderId", "partnerId"]
+      },
+      "UpdateLocationDto": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Уникальный идентификатор заказа",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "partnerId": {
+            "type": "string",
+            "description": "Идентификатор партнера/ресторана",
+            "example": "partner_abc"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90,
+            "description": "Географическая широта (latitude)",
+            "example": 38.53575
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180,
+            "description": "Географическая долгота (longitude)",
+            "example": 68.77905
+          },
+          "bearing": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 360,
+            "description": "Направление движения курьера (азимут в градусах от 0 до 360)",
+            "example": 120.5
+          },
+          "speed": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Текущая скорость курьера (км/ч или м/с)",
+            "example": 24.5
+          },
+          "timestamp": {
+            "type": "number",
+            "description": "Временная метка отправки координаты (Unix timestamp в ms)",
+            "example": 1716982400000
+          }
+        },
+        "required": ["orderId", "partnerId", "latitude", "longitude"]
+      }
+    }
+  }
+}

@@ -146,7 +146,7 @@ export class OrderGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { status: 'broadcasted' };
   }
 
-  private generateRoomKey(orderId: string, partnerId: string) {
+  private generateRoomKey(orderId: string, partnerId: string): string {
     return `order:${orderId}:partner:${partnerId}`;
   }
 }
