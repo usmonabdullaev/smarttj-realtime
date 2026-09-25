@@ -5,11 +5,13 @@ import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from './logger/logger.module.js';
 import { OrderModule } from './order/order.module.js';
 import { RedisModule } from './redis/redis.module.js';
+import { AuthModule } from './auth/auth.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     RedisModule,
+    AuthModule,
     LoggerModule,
     OrderModule,
   ],
