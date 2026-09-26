@@ -1,0 +1,34 @@
+name: Deploy Realtime Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+
+          script: |
+            set -e
+
+            cd ~/projects/smarttj-realtime
+
+            git fetch origin 
+            git reset --hard origin/main
+
+            docker network inspect smarttj-network >/dev/null 2>&1 || docker network create smarttj-network
+
+            docker compose build
+            docker compose up -d
+
+            docker image prune -f
