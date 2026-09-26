@@ -1,9 +1,12 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
-import { UserRole, ValidateRequest } from "./interfaces/validate-request.interface.js";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import {
+  UserRole,
+  ValidateRequest,
+} from './interfaces/validate-request.interface.js';
 
-const VALID_ROLES: UserRole[] = ["USER", "PARTNER", "PARTNER_EMPLOYEE"];
+const VALID_ROLES: UserRole[] = ['USER', 'PARTNER', 'PARTNER_EMPLOYEE'];
 
 @Injectable()
 export class AuthService {
@@ -13,18 +16,20 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {
-    this.jwtSecret =
-      this.configService.get<string>("JWT_SECRET") || "smarttj_default_secret";
+    this.jwtSecret = this.configService.getOrThrow<string>('JWT_SECRET');
   }
 
   async verifyToken(token: string): Promise<ValidateRequest> {
     try {
-      const payload = await this.jwtService.verifyAsync<ValidateRequest>(token, {
-        secret: this.jwtSecret,
-      });
+      const payload = await this.jwtService.verifyAsync<ValidateRequest>(
+        token,
+        {
+          secret: this.jwtSecret,
+        },
+      );
 
       if (!payload || !payload.userId || !payload.sessionId || !payload.role) {
-        throw new UnauthorizedException("Invalid token payload structure");
+        throw new UnauthorizedException('Invalid token payload structure');
       }
 
       if (!VALID_ROLES.includes(payload.role)) {
@@ -38,7 +43,7 @@ export class AuthService {
       };
     } catch (error: any) {
       throw new UnauthorizedException(
-        error?.message || "Invalid or expired token",
+        error?.message || 'Invalid or expired token',
       );
     }
   }

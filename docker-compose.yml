@@ -1,0 +1,18 @@
+services:
+  realtime:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: smarttj-realtime
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    networks:
+      - smarttj-network
+
+networks:
+  smarttj-network:
+    external: true
